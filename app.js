@@ -2,7 +2,7 @@
    play: your Google Play link, e.g. 'https://play.google.com/store/apps/details?id=com.titanchatx.app'
    apk : a direct link to the signed APK, e.g. a GitHub Releases link or 'downloads/TitanChatX.apk'
    If both are empty, the button stays "Ask for early access". If both are set, Play wins. */
-const INSTALL = { play: '', apk: 'https://github.com/Devasena-K09/TitanChatX-Releases/releases/latest/download/TitanChatX.apk', version: '3.13.0' };
+const INSTALL = { play: '', apk: 'https://github.com/Devasena-K09/TitanChatX-Releases/releases/latest/download/TitanChatX.apk', version: '3.16.0' };
 
 (() => {
   'use strict';
