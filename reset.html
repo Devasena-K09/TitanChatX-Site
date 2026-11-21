@@ -40,32 +40,57 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
   // Fill these two in. Both are safe to be public (the anon key is meant for apps and websites).
-  var SUPABASE_URL = 'https://htnlvzethmwkoslisdwk.supabase.co';
-  var SUPABASE_ANON_KEY = 'sb_publishable_prv6MY_0pqX4TnzAllmhCw_YfC5lb3w';
+  var SUPABASE_URL = 'YOUR-SUPABASE-URL';
+  var SUPABASE_ANON_KEY = 'YOUR-SUPABASE-ANON-KEY';
 
-  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { detectSessionInUrl: true, persistSession: false } });
   var form = document.getElementById('form'), lead = document.getElementById('lead'), msg = document.getElementById('msg'), go = document.getElementById('go');
   function say(t, cls){ msg.textContent = t; msg.className = cls || ''; }
+  function fail(title, text){ lead.textContent = title; say(text, 'err'); }
 
-  var ready = false;
-  function show(){ if (ready) return; ready = true; lead.textContent = 'Use at least 8 characters.'; form.hidden = false; document.getElementById('p1').focus(); }
-  sb.auth.onAuthStateChange(function(ev, session){ if (ev === 'PASSWORD_RECOVERY' || (ev === 'SIGNED_IN' && session)) show(); });
-  setTimeout(function(){
-    if (!ready) { lead.textContent = 'This link is not valid any more.'; say('Open the app, press Forgot password and ask for a new link. Links work once and expire after an hour.', 'err'); }
-  }, 4000);
+  if (SUPABASE_URL.indexOf('YOUR-') === 0 || SUPABASE_ANON_KEY.indexOf('YOUR-') === 0) {
+    fail('This page is not set up yet.', 'The website owner still needs to add the Supabase URL and key in reset.html.');
+  } else {
+    var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { detectSessionInUrl: true, persistSession: false } });
+    var query = new URLSearchParams(location.search);
+    var hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+    var tokenHash = query.get('token_hash');
+    var ready = false;
 
-  form.addEventListener('submit', async function(e){
-    e.preventDefault();
-    var a = document.getElementById('p1').value, b = document.getElementById('p2').value;
-    if (a.length < 8) return say('Use at least 8 characters.', 'err');
-    if (a !== b) return say('The two passwords do not match.', 'err');
-    go.disabled = true; say('Saving…');
-    var r = await sb.auth.updateUser({ password: a });
-    if (r.error) { go.disabled = false; return say(r.error.message, 'err'); }
-    form.hidden = true; lead.textContent = 'Done.';
-    say('Your password is changed. Open TitanChatX and log in with it.', 'ok');
-    await sb.auth.signOut();
-  });
+    function show(){ if (ready) return; ready = true; lead.textContent = 'Use at least 8 characters.'; form.hidden = false; document.getElementById('p1').focus(); }
+
+    var urlError = hash.get('error_description') || query.get('error_description');
+    if (urlError) {
+      fail('This link did not work.', urlError.replace(/\+/g, ' ') + '. Open the app, press Forgot password and ask for a new link.');
+    } else if (tokenHash) {
+      // The link is only used when you press Save, so email scanners cannot use it up.
+      show();
+    } else {
+      sb.auth.onAuthStateChange(function(ev, session){ if (ev === 'PASSWORD_RECOVERY' || (ev === 'SIGNED_IN' && session)) show(); });
+      setTimeout(async function(){
+        if (ready) return;
+        var s = await sb.auth.getSession();
+        if (s && s.data && s.data.session) return show();
+        fail('This link is not valid any more.', 'Open the app, press Forgot password and ask for a new link. Links work once and expire after an hour.');
+      }, 3000);
+    }
+
+    form.addEventListener('submit', async function(e){
+      e.preventDefault();
+      var a = document.getElementById('p1').value, b = document.getElementById('p2').value;
+      if (a.length < 8) return say('Use at least 8 characters.', 'err');
+      if (a !== b) return say('The two passwords do not match.', 'err');
+      go.disabled = true; say('Saving…');
+      if (tokenHash) {
+        var v = await sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+        if (v.error) { go.disabled = false; form.hidden = true; return fail('This link has already been used or has expired.', 'Open the app, press Forgot password and ask for a new link.'); }
+      }
+      var r = await sb.auth.updateUser({ password: a });
+      if (r.error) { go.disabled = false; return say(r.error.message, 'err'); }
+      form.hidden = true; lead.textContent = 'Done.';
+      say('Your password is changed. Open TitanChatX and log in with it.', 'ok');
+      await sb.auth.signOut();
+    });
+  }
 </script>
 </body>
 </html>
