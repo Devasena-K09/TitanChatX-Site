@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Reset your TitanChatX password</title>
+<style>
+  :root{--bg:#07040f;--panel:#14101f;--line:#2a2340;--text:#f1edff;--mute:#9a8fb8;--violet:#8b5cf6;--err:#ff6b6b;--ok:#3ddc97}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:radial-gradient(900px 500px at 50% -10%,#2b1659 0,var(--bg) 60%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{width:100%;max-width:400px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:28px 22px}
+  h1{margin:0 0 4px;font-size:22px}
+  p{margin:0 0 18px;color:var(--mute)}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+  input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:#0d0916;color:var(--text);font-size:16px}
+  input:focus{outline:2px solid var(--violet);outline-offset:1px}
+  button{width:100%;margin-top:20px;padding:14px;border:0;border-radius:14px;background:var(--violet);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.55;cursor:default}
+  #msg{min-height:22px;margin-top:14px;font-size:14px}
+  .err{color:var(--err)} .ok{color:var(--ok)}
+  .brand{font-weight:800;letter-spacing:.14em;font-size:12px;color:var(--mute);margin-bottom:14px}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">TITANCHATX</div>
+  <h1>Choose a new password</h1>
+  <p id="lead">Checking your link…</p>
+  <form id="form" hidden>
+    <label for="p1">New password</label>
+    <input id="p1" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="p2">Repeat it</label>
+    <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
+    <button id="go" type="submit">Save password</button>
+  </form>
+  <div id="msg" role="status" aria-live="polite"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  // Fill these two in. Both are safe to be public (the anon key is meant for apps and websites).
+  var SUPABASE_URL = 'https://htnlvzethmwkoslisdwk.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_prv6MY_0pqX4TnzAllmhCw_YfC5lb3w';
+
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { detectSessionInUrl: true, persistSession: false } });
+  var form = document.getElementById('form'), lead = document.getElementById('lead'), msg = document.getElementById('msg'), go = document.getElementById('go');
+  function say(t, cls){ msg.textContent = t; msg.className = cls || ''; }
+
+  var ready = false;
+  function show(){ if (ready) return; ready = true; lead.textContent = 'Use at least 8 characters.'; form.hidden = false; document.getElementById('p1').focus(); }
+  sb.auth.onAuthStateChange(function(ev, session){ if (ev === 'PASSWORD_RECOVERY' || (ev === 'SIGNED_IN' && session)) show(); });
+  setTimeout(function(){
+    if (!ready) { lead.textContent = 'This link is not valid any more.'; say('Open the app, press Forgot password and ask for a new link. Links work once and expire after an hour.', 'err'); }
+  }, 4000);
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var a = document.getElementById('p1').value, b = document.getElementById('p2').value;
+    if (a.length < 8) return say('Use at least 8 characters.', 'err');
+    if (a !== b) return say('The two passwords do not match.', 'err');
+    go.disabled = true; say('Saving…');
+    var r = await sb.auth.updateUser({ password: a });
+    if (r.error) { go.disabled = false; return say(r.error.message, 'err'); }
+    form.hidden = true; lead.textContent = 'Done.';
+    say('Your password is changed. Open TitanChatX and log in with it.', 'ok');
+    await sb.auth.signOut();
+  });
+</script>
+</body>
+</html>
