@@ -30,4 +30,4 @@ The download link and version number are set in one place, the `INSTALL` block a
 Static site, no build step. Hosted on Cloudflare Pages (build command: none, output directory: `/`).
 
 ## Contact
-SUPPORT_EMAIL
+teamnirux@gmail.com
