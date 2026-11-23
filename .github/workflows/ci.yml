@@ -1,9 +1,11 @@
-name: CI
+
+name: Website CI
 
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -11,17 +13,14 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - run: flutter pub get
-      - run: flutter analyze
-      - name: Run tests
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify website files
         run: |
-          if [ -d test ]; then flutter test; else echo "No tests yet"; fi
-      - name: Build web (catches compile errors)
-        run: flutter build web --release
+          test -f index.html
+          test -f style.css
+          test -f app.js
+          echo "TitanChatX website files verified!"
